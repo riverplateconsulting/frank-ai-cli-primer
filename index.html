@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>A primer on coding with AI agents · for Frank Heijckers</title>
+<meta name="description" content="A short guide to Claude Code and Google Antigravity, for a smart professional who has not coded with AI before.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT@0,9..144,300..700,0..100;1,9..144,300..700,0..100&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+  /* ─────────────────────────────────────────────────────────
+     Anthropic-inspired palette
+     ───────────────────────────────────────────────────────── */
+  :root {
+    --paper:       #FAF9F5;   /* Anthropic warm cream */
+    --paper-deep:  #F0EEE5;
+    --card:        #FFFFFF;
+    --ink:         #191919;
+    --ink-body:    #2C2A26;
+    --ink-muted:   #6B655B;
+    --rule:        rgba(25, 25, 25, 0.10);
+    --rule-strong: rgba(25, 25, 25, 0.22);
+
+    /* Anthropic Crail coral + supporting warm accents */
+    --crail:       #CC785C;
+    --crail-deep:  #B05E45;
+    --crail-soft:  rgba(204, 120, 92, 0.10);
+    --amber:       #D4A56F;
+    --olive:       #6B7A4A;
+    --ink-on-coral:#FFFFFF;
+
+    --ease:        cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    background: var(--paper);
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  body {
+    font-family: "Inter", system-ui, -apple-system, sans-serif;
+    font-weight: 400;
+    line-height: 1.6;
+    font-feature-settings: "ss01", "cv11";
+  }
+  ::selection { background: var(--crail); color: var(--ink-on-coral); }
+
+  a {
+    color: var(--crail-deep);
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+    transition: color 200ms var(--ease);
+  }
+  a:hover { color: var(--crail); }
+
+  /* ─────────────────────────────────────────────────────────
+     Layout shell
+     ───────────────────────────────────────────────────────── */
+  .shell {
+    max-width: 740px;
+    margin: 0 auto;
+    padding: 80px 28px 120px;
+  }
+  @media (max-width: 640px) {
+    .shell { padding: 48px 22px 80px; }
+  }
+
+  /* ─────────────────────────────────────────────────────────
+     Chrome / masthead
+     ───────────────────────────────────────────────────────── */
+  .masthead {
+    display: flex; align-items: center; gap: 14px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--rule);
+    margin-bottom: 64px;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+  }
+  .masthead-mark {
+    width: 22px; height: 22px;
+    background: var(--crail);
+    border-radius: 4px;
+    display: inline-flex; align-items: center; justify-content: center;
+    color: var(--ink-on-coral);
+    font-family: "Fraunces", serif;
+    font-style: italic;
+    font-size: 13px;
+    font-variation-settings: "opsz" 24, "SOFT" 80;
+  }
+  .masthead-r { margin-left: auto; }
+
+  /* ─────────────────────────────────────────────────────────
+     Hero
+     ───────────────────────────────────────────────────────── */
+  .eyebrow {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 12px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--crail-deep);
+    margin-bottom: 22px;
+  }
+  .eyebrow::before {
+    content: ""; display: inline-block; width: 24px; height: 1px;
+    background: var(--crail-deep);
+    margin-right: 12px; vertical-align: 4px;
+  }
+
+  h1.h1 {
+    font-family: "Fraunces", serif;
+    font-weight: 400;
+    font-size: clamp(40px, 6vw, 64px);
+    line-height: 1.04;
+    letter-spacing: -0.02em;
+    font-variation-settings: "opsz" 144, "SOFT" 50;
+    color: var(--ink);
+    margin-bottom: 24px;
+  }
+  h1.h1 .em {
+    font-style: italic;
+    color: var(--crail-deep);
+    font-variation-settings: "opsz" 144, "SOFT" 100;
+  }
+  .lede {
+    font-family: "Fraunces", serif;
+    font-style: italic;
+    font-weight: 400;
+    font-size: clamp(20px, 2.2vw, 24px);
+    line-height: 1.45;
+    color: var(--ink-body);
+    max-width: 56ch;
+    margin-bottom: 48px;
+    font-variation-settings: "opsz" 60, "SOFT" 90;
+  }
+
+  /* ─────────────────────────────────────────────────────────
+     From-Brian note
+     ───────────────────────────────────────────────────────── */
+  .note {
+    background: var(--paper-deep);
+    border-left: 3px solid var(--crail);
+    padding: 22px 26px;
+    margin-bottom: 72px;
+    border-radius: 0 4px 4px 0;
+  }
+  .note p {
+    font-family: "Fraunces", serif;
+    font-style: italic;
+    font-size: 17px;
+    line-height: 1.5;
+    color: var(--ink-body);
+    font-variation-settings: "opsz" 24, "SOFT" 60;
+  }
+  .note p + p { margin-top: 12px; }
+  .note .sig {
+    margin-top: 14px;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    font-style: normal;
+  }
+
+  /* ─────────────────────────────────────────────────────────
+     Table of contents
+     ───────────────────────────────────────────────────────── */
+  .toc {
+    margin: 0 0 80px;
+    padding: 22px 0;
+    border-top: 1px solid var(--rule);
+    border-bottom: 1px solid var(--rule);
+    display: grid;
+    grid-template-columns: 80px 1fr;
+    gap: 10px 22px;
+    align-items: baseline;
+  }
+  .toc .toc-num {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+  }
+  .toc .toc-link {
+    font-family: "Fraunces", serif;
+    font-size: 19px;
+    color: var(--ink);
+    text-decoration: none;
+    border-bottom: 1px dashed transparent;
+    transition: border-color 200ms var(--ease), color 200ms var(--ease);
+    font-variation-settings: "opsz" 36, "SOFT" 50;
+  }
+  .toc .toc-link:hover {
+    color: var(--crail-deep);
+    border-bottom-color: var(--crail);
+  }
+
+  /* ─────────────────────────────────────────────────────────
+     Section
+     ───────────────────────────────────────────────────────── */
+  section.chapter {
+    padding-top: 24px;
+    margin-bottom: 96px;
+    scroll-margin-top: 24px;
+  }
+  .chapter-tag {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--crail-deep);
+    margin-bottom: 14px;
+  }
+  h2.h2 {
+    font-family: "Fraunces", serif;
+    font-weight: 400;
+    font-size: clamp(32px, 4.4vw, 44px);
+    line-height: 1.08;
+    letter-spacing: -0.014em;
+    font-variation-settings: "opsz" 96, "SOFT" 50;
+    color: var(--ink);
+    margin-bottom: 28px;
+  }
+  h2.h2 .em {
+    font-style: italic; color: var(--crail-deep);
+    font-variation-settings: "opsz" 96, "SOFT" 100;
+  }
+  h3.h3 {
+    font-family: "Fraunces", serif;
+    font-weight: 500;
+    font-size: 22px;
+    line-height: 1.3;
+    margin-top: 38px;
+    margin-bottom: 14px;
+    color: var(--ink);
+    font-variation-settings: "opsz" 48, "SOFT" 40;
+  }
+  p {
+    font-size: 17px;
+    line-height: 1.68;
+    color: var(--ink-body);
+    margin-bottom: 18px;
+  }
+  p strong { color: var(--ink); font-weight: 600; }
+
+  ul, ol {
+    margin: 0 0 22px 0;
+    padding-left: 24px;
+  }
+  ul li, ol li {
+    font-size: 17px;
+    line-height: 1.6;
+    color: var(--ink-body);
+    margin-bottom: 8px;
+  }
+  ul li::marker { color: var(--crail); }
+  ol li::marker { color: var(--ink-muted); font-family: "JetBrains Mono", monospace; font-size: 13px; }
+
+  /* Code */
+  code {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 14px;
+    background: var(--paper-deep);
+    padding: 2px 6px;
+    border-radius: 3px;
+    color: var(--ink);
+  }
+  pre {
+    background: var(--ink);
+    color: #F5F2EA;
+    padding: 18px 22px;
+    border-radius: 5px;
+    overflow-x: auto;
+    margin: 20px 0 26px;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 13.5px;
+    line-height: 1.55;
+    box-shadow: 0 6px 20px rgba(25, 25, 25, 0.18);
+  }
+  pre code {
+    background: transparent;
+    padding: 0;
+    color: inherit;
+    font-size: inherit;
+  }
+
+  /* Principle cards */
+  .principle {
+    padding: 24px 0;
+    border-bottom: 1px solid var(--rule);
+    display: grid;
+    grid-template-columns: 40px 1fr;
+    gap: 18px;
+    align-items: baseline;
+  }
+  .principle:last-child { border-bottom: none; }
+  .principle .num {
+    font-family: "Fraunces", serif;
+    font-style: italic;
+    font-size: 28px;
+    color: var(--crail);
+    line-height: 1;
+    font-variation-settings: "opsz" 48, "SOFT" 100;
+  }
+  .principle h3 {
+    font-family: "Fraunces", serif;
+    font-weight: 500;
+    font-size: 21px;
+    color: var(--ink);
+    margin: 0 0 10px;
+    line-height: 1.25;
+    font-variation-settings: "opsz" 36, "SOFT" 40;
+  }
+  .principle p {
+    font-size: 16px;
+    color: var(--ink-body);
+    margin: 0;
+    line-height: 1.6;
+  }
+
+  /* Cheatsheet */
+  .cheat {
+    margin-top: 96px;
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-top: 4px solid var(--crail);
+    padding: 36px 38px 38px;
+    border-radius: 4px;
+    box-shadow: 0 12px 32px rgba(25, 25, 25, 0.06);
+  }
+  .cheat .label {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--crail-deep);
+    margin-bottom: 10px;
+  }
+  .cheat h2 {
+    font-family: "Fraunces", serif;
+    font-size: 28px;
+    margin-bottom: 18px;
+    font-variation-settings: "opsz" 60, "SOFT" 50;
+  }
+  .cheat .row {
+    display: grid;
+    grid-template-columns: 180px 1fr;
+    gap: 14px 20px;
+    padding: 14px 0;
+    border-top: 1px solid var(--rule);
+    font-size: 15px;
+  }
+  .cheat .row:first-of-type { border-top: none; }
+  .cheat .row .k {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 13px;
+    color: var(--ink);
+  }
+  .cheat .row .v {
+    color: var(--ink-body);
+    line-height: 1.5;
+  }
+  @media (max-width: 640px) {
+    .cheat .row { grid-template-columns: 1fr; gap: 4px; }
+  }
+
+  /* Footer */
+  footer.foot {
+    margin-top: 96px;
+    padding-top: 28px;
+    border-top: 1px solid var(--rule);
+    display: flex; justify-content: space-between; align-items: baseline;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+  }
+  footer.foot .em {
+    font-family: "Fraunces", serif;
+    font-style: italic;
+    text-transform: none;
+    letter-spacing: 0;
+    color: var(--crail-deep);
+    font-size: 14px;
+    font-variation-settings: "opsz" 24, "SOFT" 90;
+  }
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+  <!-- Masthead -->
+  <header class="masthead">
+    <span class="masthead-mark">F</span>
+    <span>For Frank Heijckers</span>
+    <span class="masthead-r">A working primer · 2026</span>
+  </header>
+
+  <!-- Hero -->
+  <div class="eyebrow">A short field guide</div>
+  <h1 class="h1">Coding with AI agents, <span class="em">for a thoughtful beginner</span>.</h1>
+  <p class="lede">
+    Two tools, one mental model, and the seven habits that separate people who like the result from people who do not. Reading time: about eight minutes.
+  </p>
+
+  <!-- From Brian -->
+  <div class="note">
+    <p>Frank, a quick one to set the scene. The two tools below are the ones I reach for every day. Claude Code lives in the macOS Terminal and is the surgical one. Google Antigravity is the new agent IDE from Google, useful when you want to spawn parallel agents on a problem and compare what they come back with.</p>
+    <p>You do not need to learn to code to use either. You need to learn to brief well, read what comes back, and say "no, try again" without flinching. That is a muscle you already have.</p>
+    <p class="sig">Brian · Misión Digital · RPC</p>
+  </div>
+
+  <!-- TOC -->
+  <nav class="toc" aria-label="Contents">
+    <span class="toc-num">01</span><a class="toc-link" href="#claude-code">Claude Code, in your macOS Terminal</a>
+    <span class="toc-num">02</span><a class="toc-link" href="#antigravity">Google Antigravity, the agent IDE</a>
+    <span class="toc-num">03</span><a class="toc-link" href="#principles">How to work well with either</a>
+    <span class="toc-num">04</span><a class="toc-link" href="#cheatsheet">Cheatsheet</a>
+  </nav>
+
+  <!-- ───── 01 · CLAUDE CODE ───── -->
+  <section class="chapter" id="claude-code">
+    <div class="chapter-tag">Chapter 01</div>
+    <h2 class="h2">Claude Code, <span class="em">in your Terminal.</span></h2>
+
+    <h3 class="h3">What it is</h3>
+    <p>Claude Code is Anthropic's command-line coding agent. You open a project folder in Terminal, type <code>claude</code>, and have a conversation with that directory. The agent can read any file, run any command, edit code in place, and commit the result. You stay the editor in chief.</p>
+
+    <h3 class="h3">Install on macOS</h3>
+    <p>You will need Node.js 18 or newer. Check with <code>node -v</code>. If missing, install from nodejs.org or via Homebrew (<code>brew install node</code>). Then install Claude Code globally:</p>
+    <pre><code>npm install -g @anthropic-ai/claude-code</code></pre>
+    <p>A Homebrew cask also exists if you prefer that route:</p>
+    <pre><code>brew install --cask claude-code</code></pre>
+    <p>Verify it landed, then open it in a project:</p>
+    <pre><code>claude --version
+cd ~/projects/my-folder
+claude</code></pre>
+    <p>On first run, Claude Code opens your browser to sign in. Use a Claude Pro, Max, Team, or Enterprise account, or an API/Console account. The free Claude.ai tier does not include Claude Code.</p>
+
+    <h3 class="h3">The mental model</h3>
+    <p>Your terminal becomes a conversation with the current directory. Claude can see every file in the folder, run any shell command, and edit files in place. Nothing ships unless you say yes.</p>
+
+    <h3 class="h3">Five starter prompts to try on day one</h3>
+    <p>Paste these as your first messages in a fresh project. Each teaches you a different muscle.</p>
+    <ol>
+      <li><code>Read this folder and tell me what it does in five sentences.</code></li>
+      <li><code>There is a typo somewhere on the homepage that says 'recieve'. Find it and fix it.</code></li>
+      <li><code>Add a new section to README.md called 'Local setup' with these three steps: 1) clone, 2) npm install, 3) npm run dev.</code></li>
+      <li><code>What changed in the last three git commits? Summarize each.</code></li>
+      <li><code>I want to add a contact form. Plan the change before writing any code, then ask me before you start editing.</code></li>
+    </ol>
+
+    <h3 class="h3">The commands you will actually use</h3>
+    <p>Type <code>/</code> inside Claude Code to see the full menu.</p>
+    <ul>
+      <li><code>/help</code> — what the tool can do, with current keyboard shortcuts</li>
+      <li><code>/init</code> — Claude reads the repo and writes a <code>CLAUDE.md</code> describing it, which loads automatically every future session</li>
+      <li><code>/clear</code> — drop context, start fresh</li>
+      <li><code>/compact</code> — keep going when the chat gets long; Claude summarizes and continues</li>
+      <li><code>/config</code> — change model, theme, permission rules</li>
+      <li><strong>Shift + Tab</strong> — cycle modes; one press puts you in <strong>Plan Mode</strong>, where Claude proposes a written plan and waits for your approval before touching any file</li>
+      <li><strong>Esc</strong> — interrupt mid-action without ending the session</li>
+    </ul>
+
+    <h3 class="h3">Two habits that make it work</h3>
+    <p><strong>Be specific.</strong> "Add a footer with the address, phone, copyright 2026, dark gray text, centered" gets you a usable footer. "Make the footer nicer" gets you a guess. Brief it the way you would brief a sharp new hire: outcome, constraints, examples.</p>
+    <p><strong>Read the diff.</strong> Before Claude writes to a file, it shows you the exact change in red and green. Skim it. If something looks wrong, say so in plain English ("do not delete the old logo path, add the new one alongside it") and Claude revises. Five seconds of reading is the entire safety net.</p>
+  </section>
+
+  <!-- ───── 02 · ANTIGRAVITY ───── -->
+  <section class="chapter" id="antigravity">
+    <div class="chapter-tag">Chapter 02</div>
+    <h2 class="h2">Google Antigravity, <span class="em">the agent IDE.</span></h2>
+
+    <h3 class="h3">What it is</h3>
+    <p>Google Antigravity is Google's agent-first development platform, launched in public preview on November 18, 2025 alongside Gemini 3. It is a desktop IDE (a modified fork of VS Code) in which autonomous AI agents plan, execute, and verify coding tasks in parallel across your editor, terminal, and a built-in browser. Different posture from a chat sidebar: you delegate, then review.</p>
+
+    <h3 class="h3">How to start on macOS</h3>
+    <p>Antigravity is a downloadable desktop app, free for individuals during the public preview.</p>
+    <ol>
+      <li>Go to <a href="https://antigravity.google/download" target="_blank" rel="noopener">antigravity.google/download</a> in Chrome.</li>
+      <li>Click <strong>Download for Apple Silicon</strong> (or the Intel build if you are on an older Mac). Minimum supported macOS is Monterey (12).</li>
+      <li>Open the DMG and drag the app into Applications. If macOS blocks it with "unable to verify developer," open System Settings → Privacy and Security, scroll to the blocked app, and choose <strong>Open Anyway</strong>.</li>
+      <li>Launch Antigravity and sign in with your personal Google account.</li>
+      <li>Approve the prompts for terminal, file system, and browser automation access. Chrome should be installed; agents drive it for verification.</li>
+    </ol>
+    <p>There is no separate signup form. Your Google account is the account.</p>
+
+    <h3 class="h3">The mental model</h3>
+    <p>Chatting with a model is a conversation. You ask, it answers, you copy code, you run it. Antigravity inverts the posture. You assign a task, then walk away while one or more agents do the work in their own workspace.</p>
+    <p>Two views matter. The <strong>Editor view</strong> looks like VS Code with an agent sidebar, useful when you want to stay close to the code. The <strong>Manager view</strong> is mission control: you spawn agents, watch them run in parallel, and switch between them like browser tabs.</p>
+    <p>Agents do not just emit code. They produce <strong>Artifacts</strong>: an implementation plan, a task list, a diff, screenshots, a recorded browser walkthrough proving the feature works. You review Artifacts the way you review a Google Doc, leaving inline comments. Approvals happen at gates you set (Always Proceed, Agent Decides, Request Review), so you stay in the loop for anything that touches money, secrets, or production.</p>
+
+    <h3 class="h3">When to reach for it vs Claude Code</h3>
+    <p><strong>Reach for Antigravity when:</strong></p>
+    <ul>
+      <li>The task is visual or web-based and you want the agent to load the page in a browser and prove it works.</li>
+      <li>You want to spawn two or three agents on the same problem (different stacks, different approaches) and compare their Artifacts side by side.</li>
+      <li>You prefer a graphical workspace with diffs, plans, and recordings laid out for you.</li>
+      <li>The job is large enough that you would rather kick it off, get coffee, and come back to review.</li>
+    </ul>
+    <p><strong>Reach for Claude Code when:</strong></p>
+    <ul>
+      <li>You are in a terminal already and want a single, coherent conversation about your repo.</li>
+      <li>The edit is surgical: rename a function across files, write a quick script, fix one failing test.</li>
+      <li>You want speed and low ceremony. No separate IDE, no approval gates.</li>
+      <li>You are operating over SSH on a server with no GUI.</li>
+    </ul>
+    <p>Honest summary: Antigravity is better for parallel exploration and verifiable UI work. Claude Code is faster and more focused for everyday edits and ops work.</p>
+
+    <h3 class="h3">One concrete starter workflow</h3>
+    <p>Open Antigravity, click <strong>Manager</strong>, then <strong>Start Conversation</strong>. Pick Gemini 3 Pro and <strong>Planning</strong> mode. Paste:</p>
+    <pre><code>Build me a one-page personal site for Frank Heijckers.
+Three sections: a short bio, three career highlights, and
+a contact form that emails me. Use plain HTML and Tailwind.
+When it works, open it in the browser and show me a recording.</code></pre>
+    <p>What happens next: the agent produces a plan Artifact (file structure, sections, dependencies). You comment on it the way you would on a Google Doc ("make the bio two paragraphs, not three"). It writes the files, runs them, opens the page in its built-in browser, and attaches a screen recording as an Artifact. You either approve, or redirect with another comment. The agent keeps going until the Artifact matches the brief.</p>
+
+    <h3 class="h3">One gotcha</h3>
+    <p>Rate limits are the loudest complaint in current coverage. The free tier can lock you out for up to seven days after 20 to 30 minutes of heavy use, and the meter is opaque (it shows "compute effort," not tokens, and can read 100 percent right before a multi-day cooldown). Even the paid tier reports 6 to 10 day cooldowns on specific models. Treat Antigravity as an exploration and prototyping tool for now, and keep Claude Code in your back pocket for when the meter runs out.</p>
+  </section>
+
+  <!-- ───── 03 · PRINCIPLES ───── -->
+  <section class="chapter" id="principles">
+    <div class="chapter-tag">Chapter 03</div>
+    <h2 class="h2">How to work well <span class="em">with either.</span></h2>
+    <p style="margin-bottom: 32px;">Seven principles. Each is a directive followed by a short paragraph. They apply whether you are in a terminal or in Antigravity's Manager view.</p>
+
+    <div class="principle">
+      <div class="num">1</div>
+      <div>
+        <h3>Plan before you code.</h3>
+        <p>Describe the outcome before asking for code. "I want a contact form that emails me when filled, validates an email address, and shows a thank-you message" beats "build me a contact form." The agent fills in everything you do not specify, and you may not love its choices. A minute spent describing what you want is the cheapest minute in the whole project.</p>
+      </div>
+    </div>
+
+    <div class="principle">
+      <div class="num">2</div>
+      <div>
+        <h3>Specify the constraints, not the steps.</h3>
+        <p>Tell it what must be true at the end, not how to get there. "The new endpoint must return JSON, must not change the existing /users response shape, and must be tested" gives the agent room to do its best work. Step-by-step instructions waste its intelligence and often box it into a worse solution than it would have found on its own. Brief it like a sharp junior: set the bar, name the non-negotiables, then get out of the way.</p>
+      </div>
+    </div>
+
+    <div class="principle">
+      <div class="num">3</div>
+      <div>
+        <h3>Read what it writes.</h3>
+        <p>Claude or Antigravity will show you a diff or a list of changes. Skim it before you say yes. You do not need to understand every line; you need to confirm that the change matches your intent. Two minutes of reading saves an hour of debugging, and you will start to absorb the shape of the code by osmosis.</p>
+      </div>
+    </div>
+
+    <div class="principle">
+      <div class="num">4</div>
+      <div>
+        <h3>Iterate in small steps.</h3>
+        <p>One change at a time beats one big request. "Add the contact form," then "now add validation," then "now style it" beats "add a styled, validated contact form with seven features." Smaller asks fail less often, are easier to review, and are trivial to roll back. Big requests hide small mistakes; small requests surface them.</p>
+      </div>
+    </div>
+
+    <div class="principle">
+      <div class="num">5</div>
+      <div>
+        <h3>Use git, always.</h3>
+        <p>Commit before any AI change. If the result is wrong, <code>git reset --hard</code> returns the file to safety in one second. Without git, a confused agent can rewrite a file you cared about and you have no undo button. Claude Code and Antigravity both respect git, but only if you have set it up. Treat the commit as the seatbelt you click before each drive.</p>
+      </div>
+    </div>
+
+    <div class="principle">
+      <div class="num">6</div>
+      <div>
+        <h3>Trust, but verify.</h3>
+        <p>If the agent says "I added the feature and tested it," run the feature yourself. Open the page. Click the button. Send the form. AI is confident; reality is the judge, and the confidence does not correlate with correctness. A working demo in your own browser is worth more than ten reassuring paragraphs in the chat.</p>
+      </div>
+    </div>
+
+    <div class="principle">
+      <div class="num">7</div>
+      <div>
+        <h3>Curiosity is the new skill.</h3>
+        <p>When the agent does something unfamiliar, ask why instead of skipping. "Why did you choose that library?" "What does this function do?" "Is there a simpler way?" The conversation is the learning. In two months of curious use, you will have a working sense of modern code without ever sitting through a course, because every real project becomes its own seminar.</p>
+      </div>
+    </div>
+
+    <p style="margin-top: 40px; font-family: 'Fraunces', serif; font-style: italic; font-size: 19px; line-height: 1.5; color: var(--ink-body); font-variation-settings: 'opsz' 36, 'SOFT' 80;">
+      The skill here is not coding. It is being a clear-eyed editor of someone else's work: setting the brief, reading the draft, catching the gap between what was promised and what was delivered. You have been doing exactly that kind of work for decades. That is the leverage.
+    </p>
+  </section>
+
+  <!-- ───── 04 · CHEATSHEET ───── -->
+  <section class="chapter cheat" id="cheatsheet">
+    <div class="label">Cheatsheet · keep this open</div>
+    <h2>The whole loop, on one card.</h2>
+
+    <div class="row"><span class="k">Install Claude Code</span><span class="v"><code>npm install -g @anthropic-ai/claude-code</code></span></div>
+    <div class="row"><span class="k">Start it</span><span class="v"><code>cd ~/projects/my-folder && claude</code></span></div>
+    <div class="row"><span class="k">Plan Mode</span><span class="v">Shift + Tab — propose a plan before touching files</span></div>
+    <div class="row"><span class="k">Interrupt</span><span class="v">Esc — stop whatever Claude is doing right now</span></div>
+    <div class="row"><span class="k">Compact context</span><span class="v"><code>/compact</code> when the chat gets long</span></div>
+    <div class="row"><span class="k">Save project context</span><span class="v"><code>/init</code> writes a CLAUDE.md that auto-loads next session</span></div>
+    <div class="row"><span class="k">Antigravity install</span><span class="v"><a href="https://antigravity.google/download" target="_blank" rel="noopener">antigravity.google/download</a> → sign in with Google</span></div>
+    <div class="row"><span class="k">Antigravity Manager</span><span class="v">Mission control. Spawn agents, watch them run in parallel.</span></div>
+    <div class="row"><span class="k">Safety net</span><span class="v"><code>git init && git add -A && git commit -m "before AI"</code> — then anything is undoable</span></div>
+    <div class="row"><span class="k">The four moves</span><span class="v">Brief, read, redirect, approve. Repeat.</span></div>
+  </section>
+
+  <footer class="foot">
+    <span>For Frank · 2026</span>
+    <span class="em">From Brian, with a coffee.</span>
+  </footer>
+
+</div>
+
+</body>
+</html>
